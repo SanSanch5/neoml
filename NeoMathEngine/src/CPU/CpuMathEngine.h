@@ -521,6 +521,7 @@ private:
 	void transposeResult( const CCpuConvolutionDesc& desc, const CConstFloatHandle& outputTransposedData,
 		int batch, int resultStart, int resultCount, const CFloatHandle& result );
 	void fillTempData( const CFloatHandle& sourceData, const CFloatHandle& filterData, const CCpuConvolutionDesc& desc, int start, int count );
+	void fillTempData3x3s1d1p1( const CFloatHandle& sourceData, const CFloatHandle& filterData, const CCpuConvolutionDesc& desc, int start, int count );
 	void blobConvolutionForwardAlgo0( const CCpuConvolutionDesc& desc,
 		const CFloatHandle& sourceData, const CFloatHandle& filterData, const CFloatHandle* freeTerm,
 		const CFloatHandle& resultData );

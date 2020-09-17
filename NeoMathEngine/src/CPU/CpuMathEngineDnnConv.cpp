@@ -24,6 +24,8 @@ limitations under the License.
 #include <MathEngineDnnConv.h>
 #include <CpuMathEnginePrivate.h>
 
+#include <Timer.h>
+
 namespace NeoML {
 
 // The algorithm used to calculate a 2D convolution
@@ -318,6 +320,64 @@ static inline void calcPaddings( const CCpuConvolutionDesc& desc, int width, int
 		min( ( endPos - desc.Source.Width() ) / desc.DilationWidth + 1, desc.Filter.Width() );
 }
 
+void CCpuMathEngine::fillTempData3x3s1d1p1( const CFloatHandle& sourceData, const CFloatHandle& tempData, const CCpuConvolutionDesc& desc, int start, int count )
+{
+	ASSERT_EXPR( desc.Filter.Width() == 3 && desc.Filter.Height() == 3 );
+	ASSERT_EXPR( desc.DilationHeight == 1 && desc.DilationWidth == 1 );
+	ASSERT_EXPR( desc.StrideHeight == 1 && desc.StrideWidth == 1 );
+	ASSERT_EXPR( desc.Source.Channels() == desc.Filter.Channels() );
+
+	const int channelsCount = desc.Filter.Depth() * desc.Filter.Channels();
+	const int filterLineSize = 3 * channelsCount;
+	const int resultG = desc.Result.Width() * desc.Result.Height();
+
+	for( int index = start; index < count + start; index++ ) {
+		const int batch = index / resultG;
+		const int height = ( index - batch * resultG ) / desc.Result.Width();
+		const int width = ( index - batch * resultG ) % desc.Result.Width();
+
+		//int startPaddingSize = 0;
+		//int endPaddingSize = 0;
+		//calcPaddings( desc, width, startPaddingSize, endPaddingSize );
+		const int startPaddingSize = min( 3, ( width < 1 ) ? 1 - width : 0 );
+		const int endPaddingSize = ( desc.Source.Width() > width + 1 ) ? 0 : min( width - desc.Source.Width() + 2, 3 );
+		const int dataSize = 3 - startPaddingSize - endPaddingSize;
+
+		//const int sourceHeight = -desc.PaddingHeight + height * desc.StrideHeight;
+		//const int sourceWidth = -desc.PaddingWidth + width * desc.StrideWidth + startPaddingSize * desc.DilationWidth;
+		const int sourceHeight = height - 1;
+		const int sourceWidth = width + startPaddingSize - 1;
+
+		const float* sourceDataPtr = GetRaw(sourceData) + batch * desc.Source.ObjectSize() + ( sourceHeight * desc.Source.Width() + sourceWidth ) * channelsCount;
+		float* tempStartPaddingPtr = GetRaw(tempData) + ( index - start ) * desc.Filter.ObjectSize();
+		float* tempDataPtr = tempStartPaddingPtr + startPaddingSize * channelsCount;
+		float* tempEndPaddingPtr = tempDataPtr + dataSize * channelsCount;
+
+		for( int h = 0; h < 3; h++ ) {
+			if( 0 <= sourceHeight + h && sourceHeight + h < desc.Source.Height() ) {
+				if( startPaddingSize > 0 ) {
+					NeoML::vectorFill( tempStartPaddingPtr, 0.0, startPaddingSize * channelsCount );
+				}
+
+				if( dataSize > 0 ) {
+					dataCopy( tempDataPtr, sourceDataPtr, dataSize * channelsCount );
+				}
+
+				if( endPaddingSize > 0 ) {
+					NeoML::vectorFill( tempEndPaddingPtr, 0.0, endPaddingSize * channelsCount );
+				}
+			} else {
+				NeoML::vectorFill( tempStartPaddingPtr, 0.0, filterLineSize );
+			}
+
+			tempStartPaddingPtr += filterLineSize;
+			tempDataPtr += filterLineSize;
+			tempEndPaddingPtr += filterLineSize;
+			sourceDataPtr += desc.Source.Width() * channelsCount;
+		}
+	}
+}
+
 void CCpuMathEngine::fillTempData( const CFloatHandle& sourceData, const CFloatHandle& tempData, const CCpuConvolutionDesc& desc, int start, int count )
 {
 	const int channelsCount = desc.Filter.Depth() * desc.Filter.Channels();
@@ -404,6 +464,14 @@ void CCpuMathEngine::blobConvolutionForwardAlgo0( const CCpuConvolutionDesc& des
 			while( index < count ) {
 				const int size = min( count - index, cacheItemCount );
 
+				//if( desc.Filter.Width() == 3 && desc.Filter.Height() == 3 &&
+				//		desc.DilationHeight == 1 && desc.DilationWidth == 1 &&
+				//		desc.StrideHeight == 1 && desc.StrideWidth == 1 &&
+				//		desc.PaddingHeight == 1 && desc.PaddingWidth == 1 ) {
+				//	fillTempData3x3s1d1p1( sourceData, tempDataPtr, desc, start + index, size );
+				//} else {
+				//	fillTempData( sourceData, tempDataPtr, desc, start + index, size );
+				//}
 				fillTempData( sourceData, tempDataPtr, desc, start + index, size );
 
 				CFloatHandle resultDataPtr = resultData + ( start + index ) * filterObjectCount;
@@ -508,9 +576,15 @@ void CCpuMathEngine::BlobConvolution( const CConvolutionDesc& convDesc, const CF
 			const int64_t algo1DataSize = static_cast<int64_t>( desc.Result.Width() ) * desc.Result.Height() * desc.Filter.ObjectSize() + desc.Result.ObjectSize();
 
 			if( min( desc.Result.ObjectCount(), algo1ThreadCount ) * algo1DataSize <= algo0ThreadCount * BlobConvolutionCacheSize ) {
+				std::string timerGroup = "Algo1";
+				CTimer t1( "Algo1", timerGroup, true );
 				blobConvolutionForwardAlgo1( desc, source, filter, freeTerm, result );
+				t1.Stop();
 			} else {
+				std::string timerGroup = "Algo0";
+				CTimer t0( "Algo0", timerGroup, true );
 				blobConvolutionForwardAlgo0( desc, source, filter, freeTerm, result );
+				t0.Stop();
 			}
 			break;
 		}
