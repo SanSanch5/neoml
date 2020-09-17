@@ -24,6 +24,8 @@ limitations under the License.
 #include <MathEngineDnnConv.h>
 #include <CpuMathEnginePrivate.h>
 
+#include <Timer.h>
+
 namespace NeoML {
 
 // The algorithm used to calculate a 2D convolution
@@ -373,6 +375,49 @@ void CCpuMathEngine::fillTempData( const CFloatHandle& sourceData, const CFloatH
 	}
 }
 
+// assume tempData is zero-filled
+void CCpuMathEngine::fillTempData_noclean( const CFloatHandle& sourceData, const CFloatHandle& tempData, const CCpuConvolutionDesc& desc, int start, int count )
+{
+	const int channelsCount = desc.Filter.Depth() * desc.Filter.Channels();
+	const int filterLineSize = desc.Filter.Width() * channelsCount;
+	const int resultG = desc.Result.Width() * desc.Result.Height();
+
+	for( int index = start; index < count + start; index++ ) {
+		const int batch = index / resultG;
+		const int height = ( index - batch * resultG ) / desc.Result.Width();
+		const int width = ( index - batch * resultG ) % desc.Result.Width();
+
+		int startPaddingSize = 0;
+		int endPaddingSize = 0;
+		calcPaddings( desc, width, startPaddingSize, endPaddingSize );
+		const int dataSize = desc.Filter.Width() - startPaddingSize - endPaddingSize;
+
+		const int sourceHeight = -desc.PaddingHeight + height * desc.StrideHeight;
+		const int sourceWidth = -desc.PaddingWidth + width * desc.StrideWidth + startPaddingSize * desc.DilationWidth;
+
+		const float* sourceDataPtr = GetRaw(sourceData) + batch * desc.Source.ObjectSize() + ( sourceHeight * desc.Source.Width() + sourceWidth ) * channelsCount;
+		float* tempStartPaddingPtr = GetRaw(tempData) + ( index - start ) * desc.Filter.ObjectSize();
+		float* tempDataPtr = tempStartPaddingPtr + startPaddingSize * channelsCount;
+
+		for( int h = 0; h < desc.Filter.Height(); h++ ) {
+			if( 0 <= sourceHeight + h * desc.DilationHeight && sourceHeight + h * desc.DilationHeight < desc.Source.Height() ) {
+				if( desc.DilationWidth == 1 ) {
+					if( dataSize > 0 ) {
+						dataCopy( tempDataPtr, sourceDataPtr, dataSize * channelsCount );
+					}
+				} else {
+					for( int i = 0; i < dataSize; i++ ) {
+						dataCopy( tempDataPtr + i * channelsCount, sourceDataPtr + i * desc.DilationWidth * channelsCount, channelsCount );
+					}
+				}
+			}
+
+			tempDataPtr += filterLineSize;
+			sourceDataPtr += desc.DilationHeight * desc.Source.Width() * channelsCount;
+		}
+	}
+}
+
 inline int ceilTo( int val, int discret )
 {
 	if( val > 0 ) {
@@ -405,6 +450,46 @@ void CCpuMathEngine::blobConvolutionForwardAlgo0( const CCpuConvolutionDesc& des
 				const int size = min( count - index, cacheItemCount );
 
 				fillTempData( sourceData, tempDataPtr, desc, start + index, size );
+
+				CFloatHandle resultDataPtr = resultData + ( start + index ) * filterObjectCount;
+
+				multiplyMatrixByTransposedMatrix( tempDataPtr, size, filterObjectSize,
+					filterObjectSize, filterData, filterObjectCount, filterObjectSize, resultDataPtr,
+					filterObjectCount, resultItemCount * filterObjectCount );
+
+				if( freeTermData != 0 ) {
+					addVectorToMatrixRows( resultDataPtr, resultDataPtr, size, filterObjectCount, filterObjectCount, filterObjectCount, *freeTermData );
+				}
+
+				index += size;
+			}
+		}
+	}
+}
+
+void CCpuMathEngine::blobConvolutionForwardAlgo0_noclean( const CCpuConvolutionDesc& desc, const CFloatHandle& sourceData,
+	const CFloatHandle& filterData, const CFloatHandle* freeTermData, const CFloatHandle& resultData )
+{
+	const int resultItemCount = desc.Result.ObjectCount() * desc.Result.Width() * desc.Result.Height();
+	const int curThreadCount = IsOmpRelevant( resultItemCount, static_cast<int64_t>( desc.Result.BlobSize() ) * desc.Filter.ObjectSize() ) ? threadCount : 1;
+	const int cacheItemCount = max( 1, min( ceilTo( BlobConvolutionCacheSize / desc.Filter.ObjectSize(), 16 ), resultItemCount / curThreadCount ) );
+	const int tempDataSize = curThreadCount * cacheItemCount * desc.Filter.ObjectSize();
+
+	CFloatHandleStackVar tempData( mathEngine(), tempDataSize );
+	NEOML_OMP_NUM_THREADS( curThreadCount )
+	{
+		const int filterObjectCount = desc.Filter.ObjectCount();
+		const int filterObjectSize = desc.Filter.ObjectSize();
+		CFloatHandle tempDataPtr = tempData + OmpGetThreadNum() * cacheItemCount * filterObjectSize;
+
+		int start;
+		int count;
+		if( OmpGetTaskIndexAndCount( resultItemCount, start, count ) ) {
+			int index = 0;
+			while( index < count ) {
+				const int size = min( count - index, cacheItemCount );
+
+				fillTempData_noclean( sourceData, tempDataPtr, desc, start + index, size );
 
 				CFloatHandle resultDataPtr = resultData + ( start + index ) * filterObjectCount;
 
@@ -507,10 +592,38 @@ void CCpuMathEngine::BlobConvolution( const CConvolutionDesc& convDesc, const CF
 				static_cast<int64_t>( desc.Result.BlobSize() ) * desc.Filter.ObjectSize() ) ? threadCount : 1;
 			const int64_t algo1DataSize = static_cast<int64_t>( desc.Result.Width() ) * desc.Result.Height() * desc.Filter.ObjectSize() + desc.Result.ObjectSize();
 
+			blobConvolutionForwardAlgo0( desc, source, filter, freeTerm, result ); // warm up run
+			blobConvolutionForwardAlgo1( desc, source, filter, freeTerm, result ); // warm up run
 			if( min( desc.Result.ObjectCount(), algo1ThreadCount ) * algo1DataSize <= algo0ThreadCount * BlobConvolutionCacheSize ) {
+				std::string timerGroup = "Algo1";
+				CTimer t1( "Algo1", timerGroup, true );
 				blobConvolutionForwardAlgo1( desc, source, filter, freeTerm, result );
-			} else {
+				t1.Stop();
+
+				CTimer t0( "Algo0(1)", timerGroup, true );
 				blobConvolutionForwardAlgo0( desc, source, filter, freeTerm, result );
+				t0.Stop();
+
+				CTimer t2( "Algo0(1)_noclean", timerGroup, true );
+				if( desc.PaddingWidth == 0 && desc.PaddingHeight == 0 ) {
+					blobConvolutionForwardAlgo0_noclean( desc, source, filter, freeTerm, result );
+				}
+				t2.Stop();
+			} else {
+				std::string timerGroup = "Algo0";
+				CTimer t0( "Algo0", timerGroup, true );
+				blobConvolutionForwardAlgo0( desc, source, filter, freeTerm, result );
+				t0.Stop();
+
+				CTimer t1( "Algo1(0)", timerGroup, true );
+				blobConvolutionForwardAlgo1( desc, source, filter, freeTerm, result );
+				t1.Stop();
+
+				CTimer t2( "Algo0_noclean", timerGroup, true );
+				if( desc.PaddingWidth == 0 && desc.PaddingHeight == 0 ) {
+					blobConvolutionForwardAlgo0_noclean( desc, source, filter, freeTerm, result );
+				}
+				t2.Stop();
 			}
 			break;
 		}
