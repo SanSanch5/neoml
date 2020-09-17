@@ -27,6 +27,7 @@ target_sources(${PROJECT_NAME}
     MathEngineHostStackAllocator.cpp
     MemoryPool.cpp
     common.cpp
+	Timer.cpp
     # Headers
     common.h
     MathEngineAllocator.h
