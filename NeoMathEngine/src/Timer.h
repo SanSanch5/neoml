@@ -69,7 +69,7 @@ public:
 			timers.push_back( timer );
 		}
 		sort( timers.begin(), timers.end(),
-			[]( auto& a, auto& b ) {
+			[]( pair<string, CTimerStruct>& a, pair<string, CTimerStruct>& b ) {
 				return a.second.group < b.second.group || a.second.group == a.first;
 			} );
 
