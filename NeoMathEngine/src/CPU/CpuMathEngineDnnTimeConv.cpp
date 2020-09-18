@@ -86,10 +86,10 @@ void CCpuMathEngine::BlobTimeConvolution( const CTimeConvolutionDesc& convDesc, 
 		CConstFloatHandle inputPtr = sourceData + inputRowStart * inputRowSize;
 		CConstFloatHandle filterPtr = filterData + filterRowStart * filter.Channels();
 
-		multiplyMatrixByTransposedMatrix( inputPtr,
+		multiplyMatrixByTransposedMatrix( GetRaw( inputPtr ),
 			source.BatchWidth(), inputObjectSize, inputObjectSize,
-			filterPtr, filter.BatchWidth(), filterDataSize,
-			outputPtr, outputObjectSize, outputObjectSize * source.BatchWidth() );
+			GetRaw( filterPtr ), filter.BatchWidth(), filterDataSize,
+			GetRaw( outputPtr ), outputObjectSize, outputObjectSize * source.BatchWidth() );
 
 		float* outputRawPtr = GetRaw( outputPtr );
 		const float* inputRawPtr = GetRaw( inputPtr );

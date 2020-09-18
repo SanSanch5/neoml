@@ -20,6 +20,7 @@ limitations under the License.
 #include <MemoryHandleInternal.h>
 #include <MathEngineCommon.h>
 #include <MathEngineDnnPoolings.h>
+#include <CpuMathEnginePrivate.h>
 
 namespace NeoML {
 
@@ -81,6 +82,22 @@ void CCpuMathEngine::blobMaxPoolingWithIndices( const CCommonMaxPoolingDesc& des
 	}
 }
 
+static inline void findMaxValueInColumns( float* resultHandle, const float* matrixHandle, int matrixHeight, int matrixWidth)
+{
+	if( matrixHeight == 1 ) {
+		dataCopy( resultHandle, matrixHandle, matrixWidth );
+		return;
+	}
+
+	const float* nextRow = matrixHandle + matrixWidth;
+	vectorEltwiseMax(matrixHandle, nextRow, resultHandle, matrixWidth);
+
+	for( int i = 2; i < matrixHeight; ++i ) {
+		nextRow += matrixWidth;
+		vectorEltwiseMax(resultHandle, nextRow, resultHandle, matrixWidth);
+	}
+}
+
 void CCpuMathEngine::blobMaxPoolingWithoutIndices( const CCommonMaxPoolingDesc& desc,
 	const CFloatHandle& sourceData, const CFloatHandle& resultData )
 {
@@ -92,18 +109,20 @@ void CCpuMathEngine::blobMaxPoolingWithoutIndices( const CCommonMaxPoolingDesc& 
 	const int windowStep = desc.StrideWidth * channels;
 	CFloatHandleStackVar buffer( *this, inputRowSize );
 
+	float* bufferPtr = GetRaw( buffer.GetHandle() );
+
 	for( int i = 0; i < source.ObjectCount(); i++ ) {
-		CConstFloatHandle inputPtr = sourceData + i * source.ObjectSize();
-		CFloatHandle outputPtr = resultData + i * result.ObjectSize();
+		const float* inputPtr = GetRaw( sourceData ) + i * source.ObjectSize();
+		float* outputPtr = GetRaw( resultData ) + i * result.ObjectSize();
 		for( int j = 0; j < result.Height(); j++ ) {
 			// Calculate maximums in columns over a strip of the window height
-			CConstFloatHandle currentStripStart = inputPtr + inputRowSize * desc.StrideHeight * j;
-			findMaxValueInColumns( buffer, currentStripStart,
+			const float* currentStripStart = inputPtr + inputRowSize * desc.StrideHeight * j;
+			NeoML::findMaxValueInColumns( bufferPtr, currentStripStart,
 				desc.FilterHeight, inputRowSize );
 			// Calculate maximum over the window
-			CConstFloatHandle currentbufferStart = buffer;
+			const float* currentbufferStart = bufferPtr;
 			for( int k = 0; k < result.Width(); k++ ) {
-				findMaxValueInColumns( outputPtr, currentbufferStart, desc.FilterWidth, channels );
+				NeoML::findMaxValueInColumns( outputPtr, currentbufferStart, desc.FilterWidth, channels );
 				currentbufferStart += windowStep;
 				outputPtr += channels;
 			}

@@ -464,7 +464,7 @@ private:
 	void blob3dConvolutionPrepareInput( const CCommon3dConvolutionDesc& desc, const CFloatHandle& inputPreparedData,
 		const CFloatHandle& inputBlobData, int inputObject, int outputHeight, int outputWidthExStart, int outputWidthExCount );
 
-	void vectorCopy(const CFloatHandle& firstHandle, const CConstFloatHandle& secondHandle, int vectorSize);
+	void vectorCopy( float* firstHandle, const float* secondHandle, int vectorSize);
 	void vectorFill( const CFloatHandle& result, float value, int vectorSize );
 	void setVectorToMatrixRows( const CFloatHandle& resultHandle, int matrixHeight, int matrixWidth, const CConstFloatHandle& vectorHandle );
 	void addVectorToMatrixRows( const CConstFloatHandle& matrixHandle, const CFloatHandle& resultHandle,
@@ -488,9 +488,9 @@ private:
 	void multiplyTransposedMatrixByMatrixAndAdd( const CConstFloatHandle& firstHandle, int firstHeight, int firstWidth, int firstRowSize,
 		const CConstFloatHandle& secondHandle, int secondWidth, int secondRowSize,
 		const CFloatHandle& resultHandle, int resultRowSize, int resultBufferSize );
-	void multiplyMatrixByTransposedMatrix( const CConstFloatHandle& firstHandle, int firstHeight,
-		int firstWidth, int firstRowSize, const CConstFloatHandle& secondHandle, int secondHeight, int secondRowSize,
-		const CFloatHandle& resultHandle, int resultRowSize, int resultBufferSize );
+	void multiplyMatrixByTransposedMatrix( const float* first, int firstHeight,
+		int firstWidth, int firstRowSize, const float* second, int secondHeight, int secondRowSize,
+		float* result, int resultRowSize, int resultBufferSize );
 	void batchMultiplyMatrixByTransposedMatrix( int batchSize, const CConstFloatHandle& firstHandle, int firstHeight,
 		int firstWidth, const CConstFloatHandle& secondHandle, int secondHeight, const CFloatHandle& resultHandle, int resultBufferSize );
 	void multiplyMatrixByTransposedMatrixAndAdd( const float* first, int firstHeight, int firstWidth, int firstRowSize,

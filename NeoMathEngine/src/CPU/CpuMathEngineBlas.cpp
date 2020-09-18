@@ -59,17 +59,6 @@ void CCpuMathEngine::SetVectorToMatrixRows( const CFloatHandle& resultHandle,
 	}
 }
 
-void CCpuMathEngine::setVectorToMatrixRows(const CFloatHandle& resultHandle,
-	int matrixHeight, int matrixWidth, const CConstFloatHandle& vectorHandle)
-{
-	CFloatHandle result = resultHandle;
-
-	for(int i = 0; i < matrixHeight; i++) {
-		vectorCopy( result, vectorHandle, matrixWidth );
-		result += matrixWidth;
-	}
-}
-
 void CCpuMathEngine::AddVectorToMatrixColumns(const CConstFloatHandle& matrixHandle, const CFloatHandle& resultHandle,
 	int matrixHeight, int matrixWidth, const CConstFloatHandle& vectorHandle)
 {
@@ -701,9 +690,9 @@ void CCpuMathEngine::MultiplyMatrixByTransposedMatrix(const CConstFloatHandle& f
 		if( OmpGetTaskIndexAndCount2D( firstHeight, 1, secondHeight, floatAlignment,
 			firstHeightStart, firstHeightCount, secondHeightStart, secondHeightCount ) )
 		{
-			CConstFloatHandle firstData = firstHandle + firstHeightStart * firstWidth;
-			CFloatHandle resultData = resultHandle + firstHeightStart * secondHeight + secondHeightStart;
-			CConstFloatHandle secondData = secondHandle + secondHeightStart * firstWidth;
+			const float* firstData = GetRaw( firstHandle + firstHeightStart * firstWidth );
+			float* resultData = GetRaw( resultHandle + firstHeightStart * secondHeight + secondHeightStart );
+			const float* secondData = GetRaw( secondHandle + secondHeightStart * firstWidth );
 
 			multiplyMatrixByTransposedMatrix( firstData, firstHeightCount, firstWidth, firstRowSize,
 				secondData, secondHeightCount, secondRowSize,

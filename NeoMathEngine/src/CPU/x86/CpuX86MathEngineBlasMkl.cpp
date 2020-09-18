@@ -88,17 +88,13 @@ void CCpuMathEngine::multiplyMatrixByMatrixAndAdd( const CConstFloatHandle& firs
 #endif
 }
 
-void CCpuMathEngine::multiplyMatrixByTransposedMatrix(const CConstFloatHandle& firstHandle, int firstHeight,
-	int firstWidth, int firstRowSize, const CConstFloatHandle& secondHandle, int secondHeight, int secondRowSize,
-	const CFloatHandle& resultHandle, int resultRowSize, int resultBufferSize)
+void CCpuMathEngine::multiplyMatrixByTransposedMatrix(const float* first, int firstHeight,
+	int firstWidth, int firstRowSize, const float* second, int secondHeight, int secondRowSize,
+	float* result, int resultRowSize, int resultBufferSize)
 {
 	ASSERT_EXPR(firstWidth <= firstRowSize);
 	ASSERT_EXPR(firstWidth <= secondRowSize);
 	ASSERT_EXPR((firstHeight - 1) * resultRowSize + secondHeight <= resultBufferSize);
-
-	const float* first = GetRaw(firstHandle);
-	const float* second = GetRaw(secondHandle);
-	float* result = GetRaw(resultHandle);
 
 #ifdef NEOML_USE_MKL
 	cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, firstHeight, secondHeight, firstWidth,

@@ -143,7 +143,7 @@ void CCpuMathEngine::blob3dConvolution1x1x1LearnAdd( const CCommon3dConvolutionD
 				for( int i = 0; i < inputBlob.Width(); ++i ) {
 					CConstFloatHandle inputPixelData = inputColData;
 					for( int k = 0; k < inputBlob.Depth(); ++k ) {
-						vectorCopy( inputBlobDataPtr, inputPixelData, input.Channels() );
+						vectorCopy( GetRaw( inputBlobDataPtr ), GetRaw( inputPixelData ), input.Channels() );
 						inputBlobDataPtr += input.Channels();
 						inputPixelData += input.Channels() * desc.StrideDepth;
 					}
@@ -198,7 +198,7 @@ void CCpuMathEngine::blob3dConvolutionPrepareInput( const CCommon3dConvolutionDe
 				// Copy part of the data from the previous rows
 				int rowsToCopy = filterBlob.Height() - desc.StrideHeight;
 				if( rowsToCopy > 0 ) {
-					vectorCopy( inputPrepared, inputPrepared - rowsToCopy * filterRowSize,
+					vectorCopy( GetRaw( inputPrepared ), GetRaw( inputPrepared - rowsToCopy * filterRowSize ),
 						rowsToCopy * filterRowSize );
 					rowsToComplete -= rowsToCopy;
 					inputJ += rowsToCopy;
@@ -252,9 +252,9 @@ void CCpuMathEngine::blob3dConvolutionPrepareInput( const CCommon3dConvolutionDe
 
 							if( validK > 0 ) {
 								// Copy the main data
-								vectorCopy( inputPrepared,
-									input + ( ( inputJ * inputBlob.Width() + startI ) * inputBlob.Depth() + startK )
-									* inputBlob.Channels(),
+								vectorCopy( GetRaw( inputPrepared ),
+									GetRaw( input + ( ( inputJ * inputBlob.Width() + startI ) * inputBlob.Depth() + startK )
+									* inputBlob.Channels() ),
 									validK * inputBlob.Channels() );
 								depthToComplete -= validK;
 								inputPrepared += validK * inputBlob.Channels();
@@ -325,9 +325,9 @@ void CCpuMathEngine::blob3dConvolution( const CCommon3dConvolutionDesc& desc, co
 			for( int b = batchStart; b < batchStart + batchCount; ++b ) {
 				blob3dConvolutionPrepareInput( desc, inputPrepared, sourceData, b, result.Height(), outputStart, outputCount );
 
-				multiplyMatrixByTransposedMatrix( inputPrepared, workingPreparedHeight, preparedWidth * source.Channels(),
-					preparedWidth * source.Channels(), filterData, filter.BatchWidth(), preparedWidth * source.Channels(),
-					outputTemp, filter.BatchWidth(), outputCount * result.Height() * result.Channels() );
+				multiplyMatrixByTransposedMatrix( GetRaw( inputPrepared ), workingPreparedHeight, preparedWidth * source.Channels(),
+					preparedWidth * source.Channels(), GetRaw( filterData ), filter.BatchWidth(), preparedWidth * source.Channels(),
+					GetRaw( outputTemp ), filter.BatchWidth(), outputCount * result.Height() * result.Channels() );
 
 				if( freeTermData != 0 ) {
 					addVectorToMatrixRows( outputTemp, outputTemp, outputTempGeometricalSize, result.Channels(),
@@ -342,7 +342,7 @@ void CCpuMathEngine::blob3dConvolution( const CCommon3dConvolutionDesc& desc, co
 				for( int tj = 0; tj < outputCount; ++tj ) {
 					CFloatHandle outputRowData = outputDataPtr;
 					for( int ti = 0; ti < result.Height(); ++ti ) {
-						vectorCopy( outputRowData, tempData, result.Channels() );
+						vectorCopy( GetRaw( outputRowData ), GetRaw( tempData ), result.Channels() );
 						tempData += result.Channels();
 						outputRowData += outputRowSize;
 					}
@@ -416,10 +416,10 @@ void CCpuMathEngine::blob3dConvolutionBackward( const CCommon3dConvolutionDesc& 
 		int inputStart;
 		int inputCount;
 		if( OmpGetTaskIndexAndCount( source.ObjectCount() * inputGeo, inputStart, inputCount ) ) {
-			multiplyMatrixByTransposedMatrix( sourceData + inputStart * filterForwardChannelsCount,
+			multiplyMatrixByTransposedMatrix( GetRaw( sourceData + inputStart * filterForwardChannelsCount ),
 				inputCount, filterForwardChannelsCount, filterForwardChannelsCount,
-				filterForward.GetHandle(), filterForwardGeometricalSize, filterForwardChannelsCount,
-				temp.GetHandle() + inputStart * tempWidth, filterForwardGeometricalSize, inputCount * tempWidth );
+				GetRaw( filterForward.GetHandle() ), filterForwardGeometricalSize, filterForwardChannelsCount,
+				GetRaw( temp.GetHandle() + inputStart * tempWidth ), filterForwardGeometricalSize, inputCount * tempWidth );
 		}
 
 		do {

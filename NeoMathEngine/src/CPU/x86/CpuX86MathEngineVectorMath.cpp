@@ -37,9 +37,9 @@ void CCpuMathEngine::VectorCopy( const CIntHandle& firstHandle, const CConstIntH
 	dataCopy( GetRaw( firstHandle ), GetRaw( secondHandle ), vectorSize );
 }
 
-void CCpuMathEngine::vectorCopy( const CFloatHandle& firstHandle, const CConstFloatHandle& secondHandle, int vectorSize )
+void CCpuMathEngine::vectorCopy( float* firstHandle, const float* secondHandle, int vectorSize )
 {
-	dataCopy( GetRaw( firstHandle ), GetRaw( secondHandle ), vectorSize );
+	dataCopy( firstHandle, secondHandle, vectorSize );
 }
 
 void CCpuMathEngine::VectorFill( const CFloatHandle& result, float value, int vectorSize )
