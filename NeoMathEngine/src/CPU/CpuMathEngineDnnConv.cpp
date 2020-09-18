@@ -397,8 +397,6 @@ inline int ceilTo( int val, int discret )
 	return ( val / discret ) * discret;
 }
 
-static __int64 xxx = 0;
-
 void CCpuMathEngine::blobConvolutionForwardAlgo0( const CCpuConvolutionDesc& desc, const CFloatHandle& sourceData,
 	const CFloatHandle& filterData, const CFloatHandle* freeTermData, const CFloatHandle& resultData )
 {
@@ -473,8 +471,6 @@ void CCpuMathEngine::blobConvolutionForwardAlgo0( const CCpuConvolutionDesc& des
 						*/
 				index += size;
 			}
-			//xxx += (__int64)resultItemCount * filterObjectCount * filterObjectSize;
-			//printf(" %d x %d x %d(%d) == %lld \n", resultItemCount, filterObjectCount, filterObjectSize, desc.Filter.ObjectSize(), xxx );
 		}
 	}
 }
