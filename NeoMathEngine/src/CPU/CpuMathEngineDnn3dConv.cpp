@@ -62,8 +62,8 @@ void CCpuMathEngine::blob3dConvolution1x1x1Backward( const CCommon3dConvolutionD
 			CFloatHandle inputDiffDataPtr = inputDiffData + batchStart * inputDiff.ObjectSize();
 
 			if( freeTermData != 0 ) {
-				setVectorToMatrixRows( inputDiffDataPtr, batchCount * inputDiff.GeometricalSize(),
-					inputDiff.Channels(), *freeTermData );
+				setVectorToMatrixRows( GetRaw( inputDiffDataPtr ), batchCount * inputDiff.GeometricalSize(),
+					inputDiff.Channels(), GetRaw( *freeTermData ) );
 			}
 
 			if( isRepackNeeded || freeTermData == 0 ) {
@@ -85,7 +85,7 @@ void CCpuMathEngine::blob3dConvolution1x1x1Backward( const CCommon3dConvolutionD
 				int inputObjSize = inputRowSize * inputDiff.Height();
 
 				if( freeTermData == 0 ) {
-					vectorFill( inputDiffDataPtr, 0, inputObjSize * batchCount );
+					vectorFill( GetRaw( inputDiffDataPtr ), 0, inputObjSize * batchCount );
 				}
 
 				for( int b = 0; b < batchCount; ++b ) {
@@ -353,12 +353,9 @@ void CCpuMathEngine::blob3dConvolution( const CCommon3dConvolutionDesc& desc, co
 	}
 }
 
-void CCpuMathEngine::addMatrixToMatrix( const CFloatHandle& firstHandle, int height,
-	int width, int firstRowSize, const CConstFloatHandle& secondHandle, int secondRowSize )
+void CCpuMathEngine::addMatrixToMatrix( float* first, int height,
+	int width, int firstRowSize, const float* second, int secondRowSize )
 {
-	float* first = GetRaw(firstHandle);
-	const float* second = GetRaw(secondHandle);
-
 	for( int j = 0; j < height; ++j ) {
 		vectorAdd( first, second, first, width );
 		first += firstRowSize;
@@ -366,12 +363,9 @@ void CCpuMathEngine::addMatrixToMatrix( const CFloatHandle& firstHandle, int hei
 	}
 }
 
-void CCpuMathEngine::sumMatrixRowsAdd( const CFloatHandle& resultHandle, const CConstFloatHandle& matrixHandle,
+void CCpuMathEngine::sumMatrixRowsAdd( float* result, const float* matrix,
 	int matrixHeight, int matrixWidth )
 {
-	const float* matrix = GetRaw(matrixHandle);
-	float* result = GetRaw(resultHandle);
-
 	for( int i = 0; i < matrixHeight; i++ ) {
 		vectorAdd(result, matrix, result, matrixWidth);
 		matrix += matrixWidth;

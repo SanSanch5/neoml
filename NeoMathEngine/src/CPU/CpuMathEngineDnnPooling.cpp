@@ -35,8 +35,8 @@ CMaxPoolingDesc* CCpuMathEngine::InitMaxPooling( const CBlobDesc& source,
 	return desc;
 }
 
-void CCpuMathEngine::blobMaxPoolingWithIndices( const CCommonMaxPoolingDesc& desc, const CFloatHandle& sourceData,
-	const CIntHandle& maxIndicesData, const CFloatHandle& resultData )
+void CCpuMathEngine::blobMaxPoolingWithIndices( const CCommonMaxPoolingDesc& desc, const float* sourceData,
+	int* maxIndicesData, float* resultData )
 {
 	const CBlobDesc& source = desc.Source;
 	const CBlobDesc& result = desc.Result;
@@ -47,32 +47,31 @@ void CCpuMathEngine::blobMaxPoolingWithIndices( const CCommonMaxPoolingDesc& des
 
 	CFloatHandleStackVar buffer( *this, inputRowSize );
 	CIntHandleStackVar rowIndexBlob( *this, inputRowSize );
-	CIntHandle rowIndexBuffer = rowIndexBlob.GetHandle();
+	int* rowIndexBuffer = GetRaw( rowIndexBlob.GetHandle() );
 	CIntHandleStackVar columnIndexBlob( *this, channels );
-	CIntHandle columnIndexBuffer = columnIndexBlob.GetHandle();
+	int* columnIndexBuffer = GetRaw( columnIndexBlob.GetHandle() );
 
 	for( int i = 0; i < source.ObjectCount(); i++ ) {
-		CConstFloatHandle inputPtr = sourceData + i * source.ObjectSize();
-		CFloatHandle outputPtr = resultData + i * result.ObjectSize();
-		CIntHandle maxIndicesPtr = maxIndicesData + i * result.ObjectSize();
+		const float* inputPtr = sourceData + i * source.ObjectSize();
+		float* outputPtr = resultData + i * result.ObjectSize();
+		int* maxIndicesPtr = maxIndicesData + i * result.ObjectSize();
 		for( int j = 0; j < result.Height(); j++ ) {
 			// Calculate maximums in columns over a strip of the window height
 			int currentStripRow = desc.StrideHeight * j;
-			CConstFloatHandle currentStripStart = inputPtr + currentStripRow * inputRowSize;
-			findMaxValueInColumns( buffer.GetHandle(), rowIndexBuffer, currentStripStart,
+			const float* currentStripStart = inputPtr + currentStripRow * inputRowSize;
+			findMaxValueInColumns( GetRaw( buffer.GetHandle() ), rowIndexBuffer, currentStripStart,
 				desc.FilterHeight, inputRowSize );
 			// Calculate maximum over each window
-			CConstFloatHandle currentbufferStart = buffer.GetHandle();
+			const float* currentbufferStart = GetRaw( buffer.GetHandle() );
 			int currentWindowColumn = 0;
 			for( int k = 0; k < result.Width(); k++ ) {
 				findMaxValueInColumns( outputPtr, columnIndexBuffer, currentbufferStart,
 					desc.FilterWidth, channels );
 				for( int l = 0; l < channels; l++ ) {
-					int windowIndex = columnIndexBuffer.GetValueAt( l ) * channels + l;
+					int windowIndex = columnIndexBuffer[l] * channels + l;
 					// Calculate the maximum element's index. It is the sum of the current strip offset, 
 					// the number of the row in the strip, the window offset and the number of the column in the window
-					maxIndicesPtr.SetValue( ( currentStripRow + rowIndexBuffer.GetValueAt( windowIndex ) ) * inputRowSize + currentWindowColumn + windowIndex );
-					maxIndicesPtr++;
+					*maxIndicesPtr = ( currentStripRow + rowIndexBuffer[windowIndex] ) * inputRowSize + currentWindowColumn + windowIndex;
 				}
 				currentbufferStart += windowStep;
 				currentWindowColumn += windowStep;
@@ -99,7 +98,7 @@ static inline void findMaxValueInColumns( float* resultHandle, const float* matr
 }
 
 void CCpuMathEngine::blobMaxPoolingWithoutIndices( const CCommonMaxPoolingDesc& desc,
-	const CFloatHandle& sourceData, const CFloatHandle& resultData )
+	const float* sourceData, float* resultData )
 {
 	const CBlobDesc& source = desc.Source;
 	const CBlobDesc& result = desc.Result;
@@ -112,8 +111,8 @@ void CCpuMathEngine::blobMaxPoolingWithoutIndices( const CCommonMaxPoolingDesc& 
 	float* bufferPtr = GetRaw( buffer.GetHandle() );
 
 	for( int i = 0; i < source.ObjectCount(); i++ ) {
-		const float* inputPtr = GetRaw( sourceData ) + i * source.ObjectSize();
-		float* outputPtr = GetRaw( resultData ) + i * result.ObjectSize();
+		const float* inputPtr = sourceData + i * source.ObjectSize();
+		float* outputPtr = resultData + i * result.ObjectSize();
 		for( int j = 0; j < result.Height(); j++ ) {
 			// Calculate maximums in columns over a strip of the window height
 			const float* currentStripStart = inputPtr + inputRowSize * desc.StrideHeight * j;
@@ -140,9 +139,9 @@ void CCpuMathEngine::BlobMaxPooling( const CMaxPoolingDesc& poolingDesc, const C
 	const CCommonMaxPoolingDesc& desc = static_cast<const CCommonMaxPoolingDesc&>( poolingDesc );
 
 	if( maxIndicesData != 0 ) {
-		blobMaxPoolingWithIndices( desc, sourceData, *maxIndicesData, resultData );
+		blobMaxPoolingWithIndices( desc, GetRaw( sourceData ), GetRaw( *maxIndicesData ), GetRaw( resultData ) );
 	} else {
-		blobMaxPoolingWithoutIndices( desc, sourceData, resultData );
+		blobMaxPoolingWithoutIndices( desc, GetRaw( sourceData ), GetRaw( resultData ) );
 	}
 }
 
@@ -278,9 +277,9 @@ void CCpuMathEngine::BlobGlobalMaxOverTimePooling( const CGlobalMaxOverTimePooli
 	const CBlobDesc& source = desc.Source;
 
 	if( maxIndicesData != 0 ) {
-		findMaxValueInColumns( resultData, *maxIndicesData, sourceData, source.BatchLength(), source.BatchWidth() * source.ObjectSize() );
+		findMaxValueInColumns( GetRaw( resultData ), GetRaw( *maxIndicesData ), GetRaw( sourceData ), source.BatchLength(), source.BatchWidth() * source.ObjectSize() );
 	} else {
-		findMaxValueInColumns( resultData, sourceData, source.BatchLength(), source.BatchWidth() * source.ObjectSize() );
+		findMaxValueInColumns( GetRaw( resultData ), GetRaw( sourceData ), source.BatchLength(), source.BatchWidth() * source.ObjectSize() );
 	}
 }
 
