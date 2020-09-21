@@ -464,11 +464,11 @@ private:
 	void blob3dConvolutionPrepareInput( const CCommon3dConvolutionDesc& desc, const CFloatHandle& inputPreparedData,
 		const CFloatHandle& inputBlobData, int inputObject, int outputHeight, int outputWidthExStart, int outputWidthExCount );
 
-	void vectorCopy( float* firstHandle, const float* secondHandle, int vectorSize);
-	void vectorFill( const CFloatHandle& result, float value, int vectorSize );
-	void setVectorToMatrixRows( const CFloatHandle& resultHandle, int matrixHeight, int matrixWidth, const CConstFloatHandle& vectorHandle );
-	void addVectorToMatrixRows( const CConstFloatHandle& matrixHandle, const CFloatHandle& resultHandle,
-		int matrixHeight, int matrixWidth, int matrixRowSize, int resultRowSize, const CConstFloatHandle& vectorHandle );
+	void vectorCopy( float* first, const float* second, int vectorSize);
+	void vectorFill( float* result, float value, int vectorSize );
+	void setVectorToMatrixRows( float* result, int matrixHeight, int matrixWidth, const float* vector );
+	void addVectorToMatrixRows( const float* matrix, float* result,
+		int matrixHeight, int matrixWidth, int matrixRowSize, int resultRowSize, const float* vector );
 	void addMatrixToMatrix( const CFloatHandle& firstHandle, int height,
 		int width, int firstRowSize, const CConstFloatHandle& secondHandle, int secondRowSize );
 	void sumMatrixRowsAdd( const CFloatHandle& resultHandle, const CConstFloatHandle& matrixHandle,

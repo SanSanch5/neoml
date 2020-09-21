@@ -46,14 +46,12 @@ void CCpuMathEngine::VectorFill( const CFloatHandle& result, float value, int ve
 {
 	ASSERT_EXPR( result.GetMathEngine() == this );
 
-	vectorFill( result, value, vectorSize );
+	vectorFill( GetRaw( result ), value, vectorSize );
 }
 
-void CCpuMathEngine::vectorFill( const CFloatHandle& resultHandle, float value, int vectorSize )
+void CCpuMathEngine::vectorFill( float* result, float value, int vectorSize )
 {
 	static_assert( sizeof( float ) == sizeof( unsigned int ), "Size of float isn't equal to size of unsigned int." );
-
-	float* result = GetRaw( resultHandle );
 
 	NeoML::vectorFill( result, value, vectorSize );
 }
