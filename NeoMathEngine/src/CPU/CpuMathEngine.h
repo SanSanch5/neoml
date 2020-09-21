@@ -450,19 +450,19 @@ private:
 	void blob3dConvolution1x1x1( const CBlobDesc& source, const CBlobDesc& filter, const CBlobDesc& result,
 		int strideHeight, int strideWidth, int strideDepth,
 		const float* sourceData, const float* filterData, const float* freeTermData, float* resultData );
-	void blob3dConvolution1x1x1Backward( const CCommon3dConvolutionDesc& desc, const CFloatHandle& outputDiffData,
-		const CFloatHandle& filterData, const CFloatHandle* freeTermData, const CFloatHandle& inputDiffData );
+	void blob3dConvolution1x1x1Backward( const CCommon3dConvolutionDesc& desc, const float* outputDiffData,
+		const float* filterData, const CFloatHandle* freeTermData, float* inputDiffData );
 	void blob3dConvolution1x1x1LearnAdd( const CCommon3dConvolutionDesc& desc, const CFloatHandle& inputData,
 		const CFloatHandle& outputDiffData, const CFloatHandle& filterDiffData, const CFloatHandle* freeTermDiffData );
-	void blob3dConvolution( const CCommon3dConvolutionDesc& desc, const CFloatHandle& sourceData,
-		const CFloatHandle& filterData, const CFloatHandle* freeTermData, const CFloatHandle& resultData );
-	void blob3dConvolutionBackward( const CCommon3dConvolutionDesc& desc, const CFloatHandle& sourceData,
-		const CFloatHandle& filterData, const CFloatHandle* freeTermData, const CFloatHandle& resultData );
+	void blob3dConvolution( const CCommon3dConvolutionDesc& desc, const float* sourceData,
+		const float* filterData, const CFloatHandle* freeTermData, float* resultData );
+	void blob3dConvolutionBackward( const CCommon3dConvolutionDesc& desc, const float* sourceData,
+		const CFloatHandle& filterData, const CFloatHandle* freeTermData, float* resultData );
 	void blob3dConvolutionLearnAdd( const CCommon3dConvolutionDesc& desc,
-		const CFloatHandle& inputData, const CFloatHandle& outputDiffData, const CFloatHandle& filterDiffData,
+		const float* inputData, const CFloatHandle& outputDiffData, const CFloatHandle& filterDiffData,
 		const CFloatHandle* freeTermDiffData, bool isFreeTermDiffFromInput );
-	void blob3dConvolutionPrepareInput( const CCommon3dConvolutionDesc& desc, const CFloatHandle& inputPreparedData,
-		const CFloatHandle& inputBlobData, int inputObject, int outputHeight, int outputWidthExStart, int outputWidthExCount );
+	void blob3dConvolutionPrepareInput( const CCommon3dConvolutionDesc& desc, float* inputPreparedData,
+		const float* inputBlobData, int inputObject, int outputHeight, int outputWidthExStart, int outputWidthExCount );
 
 	void vectorCopy( float* first, const float* second, int vectorSize);
 	void vectorFill( float* result, float value, int vectorSize );
