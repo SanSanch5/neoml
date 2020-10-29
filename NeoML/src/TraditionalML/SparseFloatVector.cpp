@@ -18,6 +18,8 @@ limitations under the License.
 
 #include <NeoML/TraditionalML/SparseFloatVector.h> 
 
+#include <Timer.h>
+
 namespace NeoML {
 
 CSparseFloatVectorDesc CSparseFloatVectorDesc::Empty; // an empty vector descriptor
@@ -361,6 +363,8 @@ CSparseFloatVector& CSparseFloatVector::operator *= ( double factor )
 
 CSparseFloatVector& CSparseFloatVector::MultiplyAndAdd( const CSparseFloatVector& vector, double factor )
 {
+	CTimer t1( "original", "MultiplyAndAdd", true );
+
 	const int otherSize = vector.NumberOfElements();
 	if( otherSize == 0 ) {
 		return *this;

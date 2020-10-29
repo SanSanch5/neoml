@@ -79,7 +79,7 @@ public:
 			// a head timer is a timer with the name equivalent to the group name
 			auto groupHead = Timers.find( timerStruct.group );
 			double delayFirstInGroup = static_cast<double>( 
-				groupHead == Timers.end() ? delay : groupHead->second.delay.count() ) / 1e6;
+				groupHead == Timers.end() ? delay : groupHead->second.delay.count() / 1e6 );
 
 			ss << setw( 8 ) << left << timerStruct.group
 				<< setw( 30 ) << timer.first

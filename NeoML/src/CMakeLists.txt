@@ -10,6 +10,8 @@ target_sources( ${PROJECT_NAME} PRIVATE
     ArchiveFile.cpp
     NeoML.cpp
     Random.cpp
+    Timer.cpp
+    Timer.h
     Dnn/BaseLayer.cpp
     Dnn/Dnn.cpp
     Dnn/DnnBlob.cpp
