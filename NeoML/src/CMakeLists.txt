@@ -11,7 +11,6 @@ target_sources( ${PROJECT_NAME} PRIVATE
     NeoML.cpp
     Random.cpp
     Timer.cpp
-    Timer.h
     Dnn/BaseLayer.cpp
     Dnn/Dnn.cpp
     Dnn/DnnBlob.cpp
@@ -156,6 +155,7 @@ target_sources( ${PROJECT_NAME} PRIVATE
     ../include/NeoML/NeoMLDefs.h
     ../include/NeoML/Platforms.h
     ../include/NeoML/Random.h
+    ../include/NeoML/Timer.h
     ../include/NeoML/Dnn/Dnn.h
     ../include/NeoML/Dnn/Dnn.inl
     ../include/NeoML/Dnn/DnnBlob.h

@@ -1,12 +1,12 @@
 #include <common.h>
 #pragma hdrstop
 
-#include <Timer.h>
+#include <NeoML/Timer.h>
 
 CMap<CString, CTimer::CTimerStruct> CTimer::Timers;
 CCriticalSection CTimer::TimersGuard;
 
-NEOML_API CString PrintNeoMLTimers() {
+CString PrintNeoMLTimers() {
 	return CTimer::PrintTimers();
 }
 

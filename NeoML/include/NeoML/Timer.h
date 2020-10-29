@@ -6,7 +6,7 @@
 
 using namespace std::chrono;
 
-class CTimer {
+class NEOML_API CTimer {
 public:
 	CTimer( bool start = false ) : CTimer( "", "", start ) {}
 	CTimer( const char* _name, CString _groupName = "", bool start = false );
@@ -37,4 +37,6 @@ private:
 	static CMap<CString, CTimerStruct> Timers;
 	static CCriticalSection TimersGuard;
 };
+
+NEOML_API CString PrintNeoMLTimers();
 
