@@ -37,7 +37,7 @@ limitations under the License.
 
 namespace NeoML {
 
-void CCudaMathEngine::CleanUp()
+void CCudaMathEngine::CleanUpFull()
 {
 	std::lock_guard<std::mutex> lock( mutex );
 	deviceStackRunTime->CleanUp();

@@ -803,7 +803,7 @@ public:
 	virtual size_t GetPeakMemoryUsage() const = 0;
 
 	// Releases all temporary resources allocated for the current thread
-	virtual void CleanUp() = 0;
+	virtual void CleanUpFull() = 0;
 
 	// Gets a pointer to access the handle memory
 	// GetBuffer and ReleaseBuffer should be called strictly in LIFO order

@@ -114,7 +114,7 @@ CCpuMathEngine::CCpuMathEngine( int _threadCount, size_t _memoryLimit ) :
 
 CCpuMathEngine::~CCpuMathEngine()
 {
-	CleanUp();
+	CleanUpFull();
 #ifdef NEOML_USE_MKL
 	// mkl_thread_free_buffers does not free the memory completely
 	// Looks like a bug in mkl
@@ -174,7 +174,7 @@ size_t CCpuMathEngine::GetPeakMemoryUsage() const
 	return memoryPool->GetPeakMemoryUsage();
 }
 
-void CCpuMathEngine::CleanUp()
+void CCpuMathEngine::CleanUpFull()
 {
 	std::lock_guard<std::mutex> lock( mutex );
 	stackAllocator->CleanUp();
