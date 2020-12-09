@@ -138,7 +138,7 @@ size_t CMetalMathEngine::GetPeakMemoryUsage() const
 	return memoryPool->GetPeakMemoryUsage();
 }
 
-void CMetalMathEngine::CleanUp()
+void CMetalMathEngine::CleanUpFull()
 {
 	std::lock_guard<CMutex> lock( *mutex );
 	deviceStackAllocator->CleanUp();

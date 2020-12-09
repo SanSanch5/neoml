@@ -144,7 +144,7 @@ size_t CVulkanMathEngine::GetPeakMemoryUsage() const
 	return memoryPool->GetPeakMemoryUsage();
 }
 
-void CVulkanMathEngine::CleanUp()
+void CVulkanMathEngine::CleanUpFull()
 {
 	std::lock_guard<std::mutex> lock( mutex );
 	deviceStackAllocator->CleanUp();
